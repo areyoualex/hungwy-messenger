@@ -22,11 +22,9 @@ if (app.get('env') === 'production') {
 }
 
 // Connect to MongoDB at MONGO_URI (environment variable)
-mongoose.connect(process.env.MONGO_URI);
+mongoose.connect(process.env.MONGO_URI || "192.169.0.1:27017");
 mongoose.connection.on('error', function(err) {
-  console.log('Error: Could not connect to MongoDB.');
-  if (!process.env.MONGO_URI)
-    console.log('Please set a value to the env variable MONGO_URI.');
+  throw new Error('Error: Could not connect to MongoDB.');
 });
 
 // Load API routes/endpoints

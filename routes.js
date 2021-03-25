@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/user.js');
 
 // Import routes
-const Auth = require('.controllers/auth.js');
+const Auth = require('./controllers/auth.js');
 
 function ensureAuthenticated(req, res, next) {
   if (!req.headers.authorization) {
