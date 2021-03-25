@@ -6,6 +6,10 @@ const bodyParser = require('body-parser');
 // environment variables)
 require('dotenv').config();
 
+// Generate a secret key for JWT if not provided
+process.env.JWT_SECRET = process.env.JWT_SECRET
+  || require('crypto').randomBytes(64).toString('hex');
+
 // Connect to MongoDB server
 (async () => {
   const db = await require('./db').connect();
@@ -26,9 +30,6 @@ require('dotenv').config();
 
   // Load API routes/endpoints
   require('./routes')(app, db);
-
-  // Check that we have a secret key for JWT
-  if (!process.env.JWT_SECRET) throw new Error('No JWT_SECRET set. Please set a secret key.');
 
   // Start the server at PORT, or :3000
   app.listen(process.env.PORT || 3000);
