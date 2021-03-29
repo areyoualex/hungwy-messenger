@@ -1,8 +1,33 @@
 const bcrypt = require('bcryptjs');
 
 module.exports.login = (db) => {
-  // TODO: login user
-  return (req, res) => {};
+  return async (req, res) => {
+    // Find a user that has an email or username matching their login
+    let match = await db.collection("users").findOne({
+      $or: [
+        { username: req.body.login },
+        { email: req.body.login }
+      ]
+    });
+    // If there is no user with that email or username
+    if (match == null)
+      return res.status(400).send({ error: 'NoMatchingLogin' });
+
+    // Try to confirm password
+    bcrypt.compare(req.body.password, match.password, (err, isMatch) => {
+      if (isMatch) {
+        // Password matches, authorize a token
+        let token = jwt.sign({username: match.username, password: match.password}, process.env.JWT_SECRET, {expiresIn: req.body.rememberMe ? "6 months" : "1d"});
+        // Set authorization header and send
+        res.set('Authorization': token);
+        res.status(200).send();
+      } else {
+        // Password doesn't match, send an error
+        return res.status(400).send({ error: 'InvalidPassword' })
+      }
+    });
+
+  };
 }
 module.exports.signup = (db) => {
   return async (req, res) => {
