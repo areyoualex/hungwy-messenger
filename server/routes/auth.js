@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 module.exports.login = (db) => {
   return async (req, res) => {
@@ -19,7 +20,7 @@ module.exports.login = (db) => {
         // Password matches, authorize a token
         let token = jwt.sign({username: match.username, password: match.password}, process.env.JWT_SECRET, {expiresIn: req.body.rememberMe ? "6 months" : "1d"});
         // Set authorization header and send
-        res.set('Authorization': token);
+        res.set({'Authorization': token});
         res.status(200).send();
       } else {
         // Password doesn't match, send an error
@@ -61,29 +62,27 @@ module.exports.signup = (db) => {
 
     // Salt and hash password before storing
     bcrypt.genSalt(10, function(err, salt) {
-      bcrypt.hash(req.body.password, salt, function(err, hash) {
+      bcrypt.hash(req.body.password, salt, async (err, hash) => {
         req.body.password = hash;
+
+        // Store new user in database
+        var user = {
+          username: req.body.username,
+          password: req.body.password,
+          email: req.body.email
+        };
+        if (req.body.screenName) user.screenName = req.body.screenName;
+
+        const result = await db.collection("users").insertOne(user);
+
+        // If insertion unsuccessful, respond with error
+        if (result.insertedCount !== 1) {
+          return res.status(500).send({ error: 'DbInsertionError' });
+        }
+
+        // Respond with signup success
+        res.status(201).send();
       });
     });
-
-    // Store new user in database
-    var user = {
-      username: req.body.username,
-      password: req.body.password,
-      email: req.body.email
-    };
-    if (req.body.screenName) user.screenName = req.body.screenName;
-
-    const result = await db.collection("users").insertOne(user);
-
-    // If insertion unsuccessful, respond with error
-    if (result.insertedCount !== 1) {
-      console.log(result.insertedCount)
-      return res.status(500).send({ error: 'DbInsertionError' });
-    }
-
-    // Respond with signup success
-    res.status(201).send();
-
   };
 }
